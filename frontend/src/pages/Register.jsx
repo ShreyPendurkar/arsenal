@@ -1,28 +1,31 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { registerUser } from '../utils/fakeApi';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaKey, FaUserShield } from 'react-icons/fa';
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', password: '', role: 'role1' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { register, user } = useAuth();
 
   if (user) navigate("/dashboard");
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = registerUser(form);
+    setError('');
+    setLoading(true);
+    
+    const res = await register(form.username, form.password, form.role);
     if (res.success) {
-      login(form.username, form.role);
       navigate('/dashboard');
     } else {
-      setError(res.message);
+      setError(res.message || 'Registration failed. Please try again.');
     }
+    setLoading(false);
   };
 
   return (
@@ -66,8 +69,12 @@ export default function Register() {
             <option value="role2">Role 2</option>
           </select>
         </label>
-        <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 transition">
-          Register
+        <button 
+          type="submit" 
+          disabled={loading}
+          className="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Registering...' : 'Register'}
         </button>
       </form>
       <p className="text-center mt-6 text-gray-600 dark:text-gray-400">

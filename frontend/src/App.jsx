@@ -12,7 +12,16 @@ import ContactUs from './pages/Form';
 
 // Protect routes for logged-in users only
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+  
   return user ? children : <Navigate to="/login" replace />;
 }
 

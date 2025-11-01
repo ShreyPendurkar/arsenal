@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaPaperPlane } from 'react-icons/fa';
-import { submitForm } from '../utils/fakeApi';
+import { contactAPI } from '../utils/api';
 
 export default function ContactUs() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -24,15 +26,26 @@ export default function ContactUs() {
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+    setError('');
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    submitForm(form);
-    setSuccess(true);
-    setForm({ name: '', email: '', subject: '', message: '' });
-    setTimeout(() => setSuccess(false), 5000);
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      await contactAPI.submit(form);
+      setSuccess(true);
+      setForm({ name: '', email: '', subject: '', message: '' });
+      setTimeout(() => setSuccess(false), 5000);
+    } catch (err) {
+      setError(err.message || 'Failed to submit contact form. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const contactInfo = [
@@ -99,6 +112,12 @@ export default function ContactUs() {
               <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 text-green-700 dark:text-green-400 py-3 px-4 mb-6 rounded-lg flex items-center gap-2">
                 <FaPaperPlane />
                 <span>Thank you! Your message has been sent successfully. We'll get back to you soon.</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 text-red-700 dark:text-red-400 py-3 px-4 mb-6 rounded-lg">
+                {error}
               </div>
             )}
 
@@ -177,10 +196,11 @@ export default function ContactUs() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                disabled={loading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-semibold transition flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaPaperPlane />
-                Send Message
+                {loading ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>

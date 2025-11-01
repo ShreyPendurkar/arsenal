@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { loginUser } from '../utils/fakeApi';
 import { useNavigate } from 'react-router-dom';
 import { FaLock, FaUser } from 'react-icons/fa';
 
 export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, user } = useAuth();
 
@@ -14,15 +14,18 @@ export default function Login() {
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = loginUser(form);
+    setError('');
+    setLoading(true);
+    
+    const res = await login(form.username, form.password);
     if (res.success) {
-      login(form.username, res.role);
       navigate('/dashboard');
     } else {
-      setError('Invalid credentials, please try again.');
+      setError(res.message || 'Invalid credentials, please try again.');
     }
+    setLoading(false);
   };
 
   return (
@@ -54,8 +57,12 @@ export default function Login() {
             onChange={handleChange}
           />
         </label>
-        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition">
-          Login
+        <button 
+          type="submit" 
+          disabled={loading}
+          className="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
       <p className="text-center mt-6 text-gray-600 dark:text-gray-400">
