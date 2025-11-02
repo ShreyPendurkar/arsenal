@@ -18,14 +18,38 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  const data = await response.json();
+  try {
+    const url = `${API_BASE_URL}${endpoint}`;
+    console.log(`[API] Making request to: ${url}`);
+    
+    const response = await fetch(url, config);
+    
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('[API] Non-JSON response received. Content-Type:', contentType);
+      console.error('[API] Response preview:', text.substring(0, 200));
+      throw new Error('Server returned non-JSON response. Make sure the backend server is running on port 3001.');
+    }
 
-  if (!response.ok) {
-    throw new Error(data.message || 'An error occurred');
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'An error occurred');
+    }
+
+    console.log(`[API] Success response from ${endpoint}:`, { success: data.success, token: data.token ? data.token.substring(0, 30) + '...' : 'no token' });
+    return data;
+  } catch (error) {
+    // If it's already our custom error, re-throw it
+    if (error.message.includes('non-JSON') || error.message.includes('Server returned')) {
+      throw error;
+    }
+    // Otherwise, it might be a network error or JSON parse error
+    console.error('API request failed:', error);
+    throw new Error(error.message || 'Network error. Please check if the backend server is running.');
   }
-
-  return data;
 };
 
 // Authentication API

@@ -34,13 +34,15 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await authAPI.login(username, password);
-      if (response.success) {
+      if (response.success && response.token) {
+        console.log('Login successful! JWT Token received:', response.token.substring(0, 50) + '...');
         setToken(response.token);
         setUser(response.user);
         return { success: true };
       }
-      return { success: false, message: response.message };
+      return { success: false, message: response.message || 'Login failed: No token received' };
     } catch (error) {
+      console.error('Login error:', error.message);
       return { success: false, message: error.message };
     }
   };

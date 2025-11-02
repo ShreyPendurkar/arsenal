@@ -251,6 +251,98 @@ app.get('/api/contacts/:id', authenticate, (req, res) => {
   });
 });
 
+// PUT /api/contacts/:id - Update a contact (protected)
+app.put('/api/contacts/:id', authenticate, (req, res) => {
+  const contactIndex = contacts.findIndex(c => c.id === req.params.id);
+
+  if (contactIndex === -1) {
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Contact not found' 
+    });
+  }
+
+  const contact = contacts[contactIndex];
+
+  // Check if user owns this contact (or allow all authenticated users to update any contact)
+  // For stricter security, uncomment the next 3 lines:
+  // if (contact.userId !== req.user.id) {
+  //   return res.status(403).json({ success: false, message: 'You can only update your own contacts' });
+  // }
+
+  const { name, email, subject, message } = req.body;
+
+  // Validate that at least one field is provided
+  if (!name && !email && !subject && !message) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'At least one field (name, email, subject, message) is required to update' 
+    });
+  }
+
+  // Validate email format if email is being updated
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid email format' 
+      });
+    }
+  }
+
+  // Update only provided fields
+  if (name) contact.name = name;
+  if (email) contact.email = email;
+  if (subject) contact.subject = subject;
+  if (message) contact.message = message;
+
+  // Add updatedAt timestamp
+  contact.updatedAt = new Date().toISOString();
+
+  res.json({
+    success: true,
+    message: 'Contact updated successfully',
+    contact: {
+      id: contact.id,
+      name: contact.name,
+      email: contact.email,
+      subject: contact.subject,
+      message: contact.message,
+      createdAt: contact.createdAt,
+      updatedAt: contact.updatedAt
+    }
+  });
+});
+
+// DELETE /api/contacts/:id - Delete a contact (protected)
+app.delete('/api/contacts/:id', authenticate, (req, res) => {
+  const contactIndex = contacts.findIndex(c => c.id === req.params.id);
+
+  if (contactIndex === -1) {
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Contact not found' 
+    });
+  }
+
+  const contact = contacts[contactIndex];
+
+  // Check if user owns this contact (or allow all authenticated users to delete any contact)
+  // For stricter security, uncomment the next 3 lines:
+  // if (contact.userId !== req.user.id) {
+  //   return res.status(403).json({ success: false, message: 'You can only delete your own contacts' });
+  // }
+
+  // Remove contact from array
+  contacts.splice(contactIndex, 1);
+
+  res.json({
+    success: true,
+    message: 'Contact deleted successfully'
+  });
+});
+
 // ==================== HEALTH CHECK ====================
 
 app.get('/api/health', (req, res) => {
@@ -271,6 +363,8 @@ app.listen(PORT, () => {
   console.log(`   POST   /api/contacts - Submit contact form (requires token)`);
   console.log(`   GET    /api/contacts - Get all contacts (requires token)`);
   console.log(`   GET    /api/contacts/:id - Get single contact (requires token)`);
+  console.log(`   PUT    /api/contacts/:id - Update contact (requires token)`);
+  console.log(`   DELETE /api/contacts/:id - Delete contact (requires token)`);
   console.log(`   GET    /api/health - Health check`);
 });
 
